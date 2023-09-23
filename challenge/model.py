@@ -8,17 +8,15 @@ from datetime import datetime
 class DelayModel:
     def __init__(self):
         self._model = Pipeline([
-            ('preprocessor', None), 
             ('classifier', LogisticRegression(max_iter=10000))
         ])
 
     def preprocess(self, data: pd.DataFrame, target_column: str = None) -> Union[Tuple[pd.DataFrame, pd.DataFrame], pd.DataFrame]:
+        """
+        Preprocess input data for model prediction.
+        """
         # Convert categorical columns to one-hot encoded columns
-        features_data = pd.concat([
-            pd.get_dummies(data['OPERA'], prefix='OPERA'),
-            pd.get_dummies(data['TIPOVUELO'], prefix='TIPOVUELO'),
-            pd.get_dummies(data['MES'], prefix='MES')
-        ], axis=1)
+        features_data = pd.get_dummies(data, columns=['OPERA', 'TIPOVUELO', 'MES'])
 
         # List of top 10 important features
         top_10_features = [
@@ -34,7 +32,7 @@ class DelayModel:
             "OPERA_Copa Air"
         ]
 
-        # Asegurarse de que todas las columnas en top_10_features estén presentes en features_data
+        # Ensure all top_10_features are present in features_data
         for col in top_10_features:
             if col not in features_data.columns:
                 features_data[col] = 0
@@ -42,15 +40,14 @@ class DelayModel:
         # Select the top 10 features
         features = features_data[top_10_features]
 
-        def get_min_diff(row):
-            fecha_o = datetime.strptime(row['Fecha-O'], '%Y-%m-%d %H:%M:%S')
-            fecha_i = datetime.strptime(row['Fecha-I'], '%Y-%m-%d %H:%M:%S')
-            min_diff = ((fecha_o - fecha_i).total_seconds())/60
-            return min_diff
-
         if target_column:
-            data['min_diff'] = data.apply(get_min_diff, axis = 1)
+            # Calculate time difference
+            def get_min_diff(row):
+                fecha_o = datetime.strptime(row['Fecha-O'], '%Y-%m-%d %H:%M:%S')
+                fecha_i = datetime.strptime(row['Fecha-I'], '%Y-%m-%d %H:%M:%S')
+                return ((fecha_o - fecha_i).total_seconds()) / 60
             
+            data['min_diff'] = data.apply(get_min_diff, axis=1)
             threshold_in_minutes = 15
             data['delay'] = np.where(data['min_diff'] > threshold_in_minutes, 1, 0)
             target = data['delay'].to_frame()
@@ -58,18 +55,22 @@ class DelayModel:
         return (features, target) if target_column else features
 
     def fit(self, features: pd.DataFrame, target: pd.DataFrame) -> None:
+        """
+        Train the model.
+        """
         # Balancing the data
         target_series = target.iloc[:, 0]
         n_y0 = len(target_series[target_series == 0])
         n_y1 = len(target_series[target_series == 1])
-        class_weight = {1: n_y0/len(target_series), 0: n_y1/len(target_series)}
-        self._model.named_steps['classifier'].set_params(class_weight=class_weight)
+        class_weight = {1: n_y0 / len(target_series), 0: n_y1 / len(target_series)}
         
-        # Train the model
-        self._model.fit(features, target)
+        # Update class weights and train the model
+        self._model.named_steps['classifier'].set_params(class_weight=class_weight)
+        self._model.fit(features, target.values.ravel())
 
     def predict(self, features: pd.DataFrame) -> List[int]:
-        # Get predictions from the model
-        predictions = self._model.predict(features)
-        predictions = predictions.tolist()
-        return list(predictions)
+        """
+        Get predictions from the model.
+        """
+        predictions = self._model.predict(features).tolist()
+        return predictions
