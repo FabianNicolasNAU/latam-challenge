@@ -41,7 +41,7 @@ jobs:
           docker build -t "gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:latest" ./
           docker push "gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:latest"
 
-      # Paso 5: Desplegar en Cloud Run
+      # Paso 5: Deploy in Cloud Run
       - name: Deploy to Cloud Run
         id: deploy
         uses: google-github-actions/deploy-cloudrun@v0
