@@ -1,47 +1,47 @@
-# Define el nombre del flujo de trabajo
+# Define the workflow name
 name: 'Continuous Delivery'
 
-# Especifica cuándo se debe ejecutar el flujo de trabajo: en cada push a la rama "main"
+# Specify when the workflow should run: on each push to the "main" branch
 on:
   push:
     branches:
       - main
 
-# Define las variables de entorno
+# Define environment variables
 env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }} # Se obtiene del secret GCP_PROJECT_ID en GitHub
-  SERVICE: challenge-api # Nombre del servicio Cloud Run
-  REGION: southamerica-west1 # Región del servicio Cloud Run
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}  # Retrieved from the GCP_PROJECT_ID secret in GitHub
+  SERVICE: challenge-api                      # Name of the Cloud Run service
+  REGION: southamerica-west1                  # Cloud Run service region
 
-# Define los trabajos que se ejecutarán
+# Define the jobs to run
 jobs:
   deploy:
     name: Build and Push to GCP
     runs-on: ubuntu-latest
     steps:
-      # Paso 1: Obtener el código del repositorio
-      - name: Checkout
+      # Step 1: Check out the repository code
+      - name: Checkout Repository
         uses: actions/checkout@v2
 
-      # Paso 2: Autenticarse en Google Cloud usando la clave de la cuenta de servicio
-      - name: Google Auth
+      # Step 2: Authenticate with Google Cloud using the service account key
+      - name: Authenticate with Google Cloud
         id: auth
         uses: 'google-github-actions/auth@v0'
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
-      # Paso 3: Authentication with Docker
-      - name: Docker Auth
+      # Step 3: Authenticate with Docker for GCP
+      - name: Authenticate Docker with GCP
         run: |-
           gcloud auth configure-docker --quiet
 
-      # Paso 4: Construir y enviar el contenedor a Google Container Registry
-      - name: Build and Push Container
+      # Step 4: Build and push the container image to Google Container Registry
+      - name: Build and Push Docker Image
         run: |-
           docker build -t "gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:latest" ./
           docker push "gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:latest"
 
-      # Paso 5: Deploy in Cloud Run
+      # Step 5: Deploy the container to Cloud Run
       - name: Deploy to Cloud Run
         id: deploy
         uses: google-github-actions/deploy-cloudrun@v0
@@ -50,6 +50,6 @@ jobs:
           region: ${{ env.REGION }}
           image: gcr.io/${{ env.PROJECT_ID }}/challenge-api:latest
 
-      # Paso 6: Mostrar la URL de salida de Cloud Run (si es necesario)
-      - name: Show Output
+      # Step 6: Display the Cloud Run service URL (if needed)
+      - name: Display Cloud Run Service URL
         run: echo ${{ steps.deploy.outputs.url }}

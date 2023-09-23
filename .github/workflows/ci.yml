@@ -1,28 +1,37 @@
+# Define the workflow name
 name: 'Continuous Integration'
 
+# Specify when the workflow should run: on each push to the "main" branch
 on:
   push:
     branches:
       - main
 
+# Define the jobs to run
 jobs:
   build_and_test:
+    name: Build and Test
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      # Step 1: Check out the repository code
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-    - name: Set up Python 3.9
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
+      # Step 2: Set up the desired Python version
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
 
-    - name: Install dependencies
-      run: make install
+      # Step 3: Install the required dependencies
+      - name: Install Dependencies
+        run: make install
 
-    - name: Run Model tests
-      run: make model-test
+      # Step 4: Execute model-related tests
+      - name: Execute Model Tests
+        run: make model-test
 
-    - name: Run API tests
-      run: make api-test
+      # Step 5: Execute API-related tests
+      - name: Execute API Tests
+        run: make api-test

@@ -6,18 +6,18 @@ from challenge.model import DelayModel
 
 app = FastAPI()
 
-# Instanciar el modelo y entrenarlo al iniciar la aplicación
+# Load and preprocess the training data, then train the model upon application start-up.
 model = DelayModel()
 data = pd.read_csv("data/data.csv")
 features, target = model.preprocess(data, target_column="delay")
 model.fit(features=features, target=target)
 
-# Aerolíneas válidas y otros datos constantes (sólo cargar una vez al inicio)
+# Valid airlines and other constant data (loaded once at start-up).
 valid_opera = data['OPERA'].unique().tolist()
 valid_tipovuelo = ["I", "N"]
 valid_mes = list(range(1, 13))
 
-# Pydantic BaseModels para la entrada esperada
+# Pydantic BaseModels for expected input.
 class Flight(BaseModel):
     OPERA: str
     TIPOVUELO: str
@@ -28,35 +28,36 @@ class FlightData(BaseModel):
 
 @app.get("/health", status_code=200)
 async def get_health() -> dict:
-    """Endpoint para verificar la salud de la API."""
+    """
+    Endpoint to check the health of the API.
+    """
     return {"status": "OK"}
 
 @app.post("/predict", status_code=200)
 async def post_predict(flight_data: FlightData) -> dict:
     """
-    Endpoint para realizar predicciones basadas en datos de vuelo.
+    Endpoint to make predictions based on flight data.
     """
-    # Lista para almacenar vuelos válidos
+    # List to store valid flights.
     valid_flights = []
 
-    # Validar cada vuelo en la solicitud
+    # Validate each flight in the request.
     for flight in flight_data.flights:
         if (flight.OPERA not in valid_opera or 
             flight.TIPOVUELO not in valid_tipovuelo or 
-            flight.MES not in valid_mes):
-            
+            flight.MES not in valid_mes):          
             raise HTTPException(status_code=400, detail="Invalid input data")
         
-        # Agregar vuelo válido a la lista
+        # Add valid flight to the list.
         valid_flights.append(flight.dict())
 
-    # Convertir la lista de diccionarios válidos a DataFrame
+    # Convert the list of valid dictionaries to a DataFrame.
     data = pd.DataFrame(valid_flights)
 
-    # Preprocesar el input
+    # Preprocess the input.
     features = model.preprocess(data)
 
-    # Realizar la predicción
+    # Make the prediction.
     prediction = model.predict(features)
 
     return {"predict": prediction}

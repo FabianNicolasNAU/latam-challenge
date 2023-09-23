@@ -5,8 +5,12 @@ from sklearn.pipeline import Pipeline
 from typing import Tuple, Union, List
 from datetime import datetime
 
+
 class DelayModel:
     def __init__(self):
+        """
+        Initialize the DelayModel with a logistic regression pipeline.
+        """
         self._model = Pipeline([
             ('classifier', LogisticRegression(max_iter=10000))
         ])
@@ -14,6 +18,10 @@ class DelayModel:
     def preprocess(self, data: pd.DataFrame, target_column: str = None) -> Union[Tuple[pd.DataFrame, pd.DataFrame], pd.DataFrame]:
         """
         Preprocess input data for model prediction.
+
+        :param data: Raw data to preprocess.
+        :param target_column: Name of the target column, if present in the data.
+        :return: Processed features and optionally, target labels.
         """
         # Convert categorical columns to one-hot encoded columns
         features_data = pd.get_dummies(data, columns=['OPERA', 'TIPOVUELO', 'MES'])
@@ -41,7 +49,7 @@ class DelayModel:
         features = features_data[top_10_features]
 
         if target_column:
-            # Calculate time difference
+            # Calculate time difference in minutes
             def get_min_diff(row):
                 fecha_o = datetime.strptime(row['Fecha-O'], '%Y-%m-%d %H:%M:%S')
                 fecha_i = datetime.strptime(row['Fecha-I'], '%Y-%m-%d %H:%M:%S')
@@ -56,9 +64,12 @@ class DelayModel:
 
     def fit(self, features: pd.DataFrame, target: pd.DataFrame) -> None:
         """
-        Train the model.
+        Train the model using the provided features and target.
+
+        :param features: Input features for training.
+        :param target: Target labels for training.
         """
-        # Balancing the data
+        # Calculate class weights to balance the data
         target_series = target.iloc[:, 0]
         n_y0 = len(target_series[target_series == 0])
         n_y1 = len(target_series[target_series == 1])
@@ -70,7 +81,9 @@ class DelayModel:
 
     def predict(self, features: pd.DataFrame) -> List[int]:
         """
-        Get predictions from the model.
+        Predict the delay labels for the given features.
+
+        :param features: Input features for prediction.
+        :return: Predicted delay labels.
         """
-        predictions = self._model.predict(features).tolist()
-        return predictions
+        return self._model.predict(features).tolist()
