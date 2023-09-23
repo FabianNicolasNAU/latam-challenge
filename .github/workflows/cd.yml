@@ -30,14 +30,9 @@ jobs:
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
-      # Paso 3: Autenticarse en Docker para Google Container Registry
       - name: Docker Auth
-        id: docker-auth
-        uses: 'docker/login-action@v1'
-        with:
-          username: 'oauth2accesstoken'
-          password: '${{ steps.auth.outputs.access_token }}'
-          registry: 'gcr.io'
+        run: |-
+          gcloud auth configure-docker --quiet
 
       # Paso 4: Construir y enviar el contenedor a Google Container Registry
       - name: Build and Push Container
