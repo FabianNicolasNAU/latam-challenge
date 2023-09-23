@@ -44,3 +44,4 @@ jobs:
     - name: Deploy to Google Cloud Run
       run: |
         gcloud run deploy challenge-api-mliglyodka-tl --image=docker.io/nau1/challenge-api:latest --region=southamerica-west1 --platform=managed --allow-unauthenticated --port=8000
+        
