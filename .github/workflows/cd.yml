@@ -30,6 +30,7 @@ jobs:
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
+      # Paso 3: Authentication with Docker
       - name: Docker Auth
         run: |-
           gcloud auth configure-docker --quiet
