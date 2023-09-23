@@ -25,4 +25,4 @@ jobs:
       run: make model-test
 
     - name: Run API tests
-      run: make test-api
+      run: make api-test
