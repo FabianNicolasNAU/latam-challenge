@@ -1,14 +1,16 @@
 import unittest
-
 from fastapi.testclient import TestClient
 from challenge import app
+import numpy as np
+from unittest.mock import patch
 
 
 class TestBatchPipeline(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
-        
-    def test_should_get_predict(self):
+
+    @patch('sklearn.linear_model._logistic.LogisticRegression.predict', return_value=np.array([0]))      
+    def test_should_get_predict(self, mock_predict):
         data = {
             "flights": [
                 {
@@ -23,8 +25,8 @@ class TestBatchPipeline(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"predict": [0]})
     
-
-    def test_should_failed_unkown_column_1(self):
+    @patch('sklearn.linear_model._logistic.LogisticRegression.predict', return_value=np.array([0]))  
+    def test_should_failed_unkown_column_1(self, mock_predict):
         data = {       
             "flights": [
                 {
@@ -38,7 +40,8 @@ class TestBatchPipeline(unittest.TestCase):
         response = self.client.post("/predict", json=data)
         self.assertEqual(response.status_code, 400)
 
-    def test_should_failed_unkown_column_2(self):
+    @patch('sklearn.linear_model._logistic.LogisticRegression.predict', return_value=np.array([0]))  
+    def test_should_failed_unkown_column_2(self, mock_predict):
         data = {        
             "flights": [
                 {
@@ -52,7 +55,8 @@ class TestBatchPipeline(unittest.TestCase):
         response = self.client.post("/predict", json=data)
         self.assertEqual(response.status_code, 400)
     
-    def test_should_failed_unkown_column_3(self):
+    @patch('sklearn.linear_model._logistic.LogisticRegression.predict', return_value=np.array([0]))  
+    def test_should_failed_unkown_column_3(self, mock_predict):
         data = {        
             "flights": [
                 {

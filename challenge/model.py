@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 from sklearn.linear_model import LogisticRegression
-from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from typing import Tuple, Union, List
 from datetime import datetime
@@ -12,7 +11,6 @@ class DelayModel:
             ('preprocessor', None), 
             ('classifier', LogisticRegression(max_iter=10000))
         ])
-        self.is_fitted = False
 
     def preprocess(self, data: pd.DataFrame, target_column: str = None) -> Union[Tuple[pd.DataFrame, pd.DataFrame], pd.DataFrame]:
         # Convert categorical columns to one-hot encoded columns
@@ -36,6 +34,11 @@ class DelayModel:
             "OPERA_Copa Air"
         ]
 
+        # Asegurarse de que todas las columnas en top_10_features estén presentes en features_data
+        for col in top_10_features:
+            if col not in features_data.columns:
+                features_data[col] = 0
+
         # Select the top 10 features
         features = features_data[top_10_features]
 
@@ -45,11 +48,12 @@ class DelayModel:
             min_diff = ((fecha_o - fecha_i).total_seconds())/60
             return min_diff
 
-        data['min_diff'] = data.apply(get_min_diff, axis = 1)
-        
-        threshold_in_minutes = 15
-        data['delay'] = np.where(data['min_diff'] > threshold_in_minutes, 1, 0)
-        target = data['delay'].to_frame()
+        if target_column:
+            data['min_diff'] = data.apply(get_min_diff, axis = 1)
+            
+            threshold_in_minutes = 15
+            data['delay'] = np.where(data['min_diff'] > threshold_in_minutes, 1, 0)
+            target = data['delay'].to_frame()
 
         return (features, target) if target_column else features
 
@@ -63,11 +67,8 @@ class DelayModel:
         
         # Train the model
         self._model.fit(features, target)
-        self.is_fitted = True
 
     def predict(self, features: pd.DataFrame) -> List[int]:
-        if not self.is_fitted:
-            raise ValueError("Model is not fitted yet. Please fit the model before predicting.")
         # Get predictions from the model
         predictions = self._model.predict(features)
         predictions = predictions.tolist()
